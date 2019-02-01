@@ -76,7 +76,7 @@ def organize(source_dir, target_dir):
                             print(f'{file_path}: Already exists. {target_file_path}')
                             target_file_path = os.path.join(target_dir, REVIEW_DIR, year_dir, file_dir, f)
 
-                    #move_file(file_path, target_file_path)
+                    move_file(file_path, target_file_path)
                     print(f'{file_path}: Moved to {target_file_path}.')
             else:
                     organize(file_path, target_dir)
@@ -85,9 +85,9 @@ def organize(source_dir, target_dir):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Organize files into folders automatically based on date created. Format: {year}/{month}-{day}-{year}')
 
-    parser.add_argument('source_dir', type=str, help='Source directory')
-    parser.add_argument('destination_dir', type=str, help='Destination directory')
+    parser.add_argument('source', type=str, help='Source directory')
+    parser.add_argument('destination', type=str, help='Destination directory')
 
     args = parser.parse_args()
 
-    organize(args.source_dir, args.destination_dir)
+    organize(args.source, args.destination)
