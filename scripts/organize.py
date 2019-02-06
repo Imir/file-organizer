@@ -1,30 +1,35 @@
 import os
-import PIL.Image
 import shutil
 import argparse
+from hachoir.parser import createParser
+from hachoir.metadata import extractMetadata
 
 from datetime import datetime
 
-IMAGE_EXTENSIONS = [ '.jpg' ]
 REVIEW_DIR = '0000000'
 
 def get_creation_date_from_meta_data(file_path):
-    valid_image_date_tags = [ 36867, 36868 ] # DateTimeOriginal, DateTimeDigitized
-    image_date_time = None
+	meta_date = None
 
-    img = PIL.Image.open(file_path)
-    exif_data = img._getexif()
+	parser = createParser(file_path)
 
-    for tag in valid_image_date_tags:
-            try:
-                image_date_time_str = exif_data[tag]
+	if parser:
+		with parser:
+			try:
+				valid_date_tags = [ 'date_time_original', 'creation_date' ]
 
-                image_date_time = datetime.strptime(image_date_time_str, '%Y:%m:%d %H:%M:%S')
-                break
-            except:
-                continue
+				metadata = extractMetadata(parser)
 
-    return image_date_time
+				for tag in valid_date_tags:
+					try:
+						meta_date = metadata.get(tag)
+						break
+					except:
+						continue
+			except:
+				pass
+
+	return meta_date
 
 def get_creation_date_from_file_data(file_path):
     created = os.path.getctime(file_path)
@@ -33,24 +38,18 @@ def get_creation_date_from_file_data(file_path):
     return datetime.fromtimestamp(min(created, last_modified))
 
 def get_file_date(file_path):
-    file_date = None
-    file_name, file_extension = os.path.splitext(file_path)
+	file_date = None
 
-    if (file_extension.lower() in IMAGE_EXTENSIONS):
-            # first, try to read image taken date from exif
-            try:
-                    file_date = get_creation_date_from_meta_data(file_path)
-            except:
-                    print(f'{file_path}: Couldn\'t open the file.')
-
-            if (file_date == None):
-                    print(f'{file_path}: Could\'t read image taken date.')
-                    file_date = get_creation_date_from_file_data(file_path)
-    else:
-            # it's not an image, get file creation date
-            file_date = get_creation_date_from_file_data(file_path)
-
-    return file_date
+	# first, try to read media taken date from exif
+	try:
+	        file_date = get_creation_date_from_meta_data(file_path)
+	except:
+	        print(f'{file_path}: Could\'t read media creation date.')
+	
+	if (file_date == None):
+	        file_date = get_creation_date_from_file_data(file_path)
+	
+	return file_date
 
 def move_file(source_file, destination_file):
     # create destination folder
@@ -83,11 +82,11 @@ def organize(source_dir, target_dir):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Organize files into folders automatically based on date created. Format: {year}/{month}-{day}-{year}')
-
-    parser.add_argument('source', type=str, help='Source directory')
-    parser.add_argument('destination', type=str, help='Destination directory')
-
-    args = parser.parse_args()
-
-    organize(args.source, args.destination)
+	parser = argparse.ArgumentParser(description='Organize files into folders automatically based on date created. Format: {year}/{month}-{day}-{year}')
+	
+	parser.add_argument('source', type=str, help='Source directory')
+	parser.add_argument('destination', type=str, help='Destination directory')
+	
+	args = parser.parse_args()
+	
+	organize(args.source, args.destination)
