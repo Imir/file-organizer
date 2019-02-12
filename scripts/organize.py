@@ -1,11 +1,12 @@
 import os
 import shutil
 import argparse
+from datetime import datetime
 from hachoir.parser import createParser
 from hachoir.metadata import extractMetadata
+from hachoir.core import config
 
-from datetime import datetime
-
+IMAGE_EXTENSIONS = ['.jpg', '.png']
 REVIEW_DIR = '0000000'
 
 def get_creation_date_from_meta_data(file_path):
@@ -16,16 +17,13 @@ def get_creation_date_from_meta_data(file_path):
 	if parser:
 		with parser:
 			try:
-				valid_date_tags = [ 'date_time_original', 'creation_date' ]
+				valid_date_tags = ['date_time_original', 'creation_date']
 
 				metadata = extractMetadata(parser)
-
 				for tag in valid_date_tags:
-					try:
+					if metadata.has(tag):
 						meta_date = metadata.get(tag)
 						break
-					except:
-						continue
 			except:
 				pass
 
@@ -39,16 +37,18 @@ def get_creation_date_from_file_data(file_path):
 
 def get_file_date(file_path):
 	file_date = None
+	file_name, file_extension = os.path.splitext(file_path)
 
 	# first, try to read media taken date from exif
 	try:
-	        file_date = get_creation_date_from_meta_data(file_path)
+		if (file_extension.lower() in IMAGE_EXTENSIONS):
+			file_date = get_creation_date_from_meta_data(file_path)
 	except:
 	        print(f'{file_path}: Could\'t read media creation date.')
-	
+
 	if (file_date == None):
 	        file_date = get_creation_date_from_file_data(file_path)
-	
+
 	return file_date
 
 def move_file(source_file, destination_file):
@@ -82,11 +82,12 @@ def organize(source_dir, target_dir):
 
 
 if __name__ == "__main__":
+	config.quiet = True
+
 	parser = argparse.ArgumentParser(description='Organize files into folders automatically based on date created. Format: {year}/{month}-{day}-{year}')
-	
+
 	parser.add_argument('source', type=str, help='Source directory')
 	parser.add_argument('destination', type=str, help='Destination directory')
-	
+
 	args = parser.parse_args()
-	
 	organize(args.source, args.destination)
